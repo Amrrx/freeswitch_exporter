@@ -1,0 +1,32 @@
+# Use a multi-stage build to reduce the final image size
+# First stage: Build the exporter
+FROM golang:1.18 as builder
+
+# Set the working directory in the container
+WORKDIR /go/src/app
+
+# Clone the repository
+COPY . .
+
+# Build the application
+RUN go build
+
+# Second stage: Setup the final image
+FROM debian:buster-slim
+
+# Set the working directory in the container
+WORKDIR /root/
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /go/src/app/freeswitch_exporter .
+
+# Expose the default port (9282)
+EXPOSE 9282
+ENV WORKERS=1 \
+    ENVS="1.env" \
+    CNFC_UUID="c6988a00-3cc1-4da7-961e-0ad5650b4a4a" \
+    CNF_UUID="12951517-96ee-4a62-a765-a8eba6300207" \
+    NS_UUID="f38481a2-2a73-47a8-8c8f-b9af1b9a7e9a"
+
+# Run the exporter
+ENTRYPOINT ["./freeswitch_exporter"]

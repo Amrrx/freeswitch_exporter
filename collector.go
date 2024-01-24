@@ -52,7 +52,7 @@ type Metric struct {
 }
 
 const (
-	namespace = "freeswitch"
+	namespace = "core_sbc"
 )
 
 type Gateways struct {
@@ -209,8 +209,9 @@ var (
 		{Name: "min_idle_cpu", Type: prometheus.GaugeValue, Help: "Minimum CPU idle", RegexIndex: 10},
 	}
 	statusRegex = regexp.MustCompile(`(\d+) session\(s\) since startup\s+(\d+) session\(s\) - peak (\d+), last 5min (\d+)\s+(\d+) session\(s\) per Sec out of max (\d+), peak (\d+), last 5min (\d+)\s+(\d+) session\(s\) max\s+min idle cpu (\d+\.\d+)\/(\d+\.\d+)`)
+	jsonFormat = &promlog.AllowedFormat{};
+	
 )
-
 // NewCollector processes uri, timeout and methods and returns a new Collector.
 func NewCollector(uri string, timeout time.Duration, password string, rtpEnable bool) (*Collector, error) {
 	var c Collector
@@ -222,6 +223,8 @@ func NewCollector(uri string, timeout time.Duration, password string, rtpEnable 
 
 	var url *url.URL
 	var err error
+
+	jsonFormat.Set("json")
 
 	if url, err = url.Parse(c.URI); err != nil {
 		return nil, fmt.Errorf("cannot parse URI: %w", err)
@@ -238,19 +241,19 @@ func NewCollector(uri string, timeout time.Duration, password string, rtpEnable 
 	c.totalScrapes = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "exporter_total_scrapes",
-		Help:      "Current total freeswitch scrapes.",
+		Help:      "Current total core_sbc scrapes.",
 	})
 
 	c.failedScrapes = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "exporter_failed_scrapes",
-		Help:      "Number of failed freeswitch scrapes.",
+		Help:      "Number of failed core_sbc scrapes.",
 	})
 
 	return &c, nil
 }
 
-// scrape will connect to the freeswitch instance and push metrics to the Prometheus channel.
+// scrape will connect to the core_sbc instance and push metrics to the Prometheus channel.
 func (c *Collector) scrape(ch chan<- prometheus.Metric) error {
 	c.totalScrapes.Inc()
 
@@ -354,7 +357,8 @@ func (c *Collector) scapeMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) loadModuleMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api xml_locate configuration configuration name modules.conf")
 
@@ -373,7 +377,7 @@ func (c *Collector) loadModuleMetrics(ch chan<- prometheus.Metric) error {
 	fsLoadModules := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "freeswitch_load_module",
-			Help: "freeswitch load module status",
+			Help: "core_sbc load module status",
 		},
 		[]string{
 			"module",
@@ -399,7 +403,7 @@ func (c *Collector) loadModuleMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api sofia xmlstatus gateway")
 
@@ -423,7 +427,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		}
 		level.Debug(logger).Log("sofia ", gateway.Name, " status:", status)
 		fs_status, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_status", "freeswitch gateways status", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile, "context": gateway.Context, "scheme": gateway.Scheme}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_status", "core_sbc gateways status", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile, "context": gateway.Context, "scheme": gateway.Scheme}),
 			prometheus.GaugeValue,
 			float64(status),
 		)
@@ -435,7 +439,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- fs_status
 
 		call_in, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_call_in", "freeswitch gateway call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_call_in", "core_sbc gateway call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.CallsIn),
 		)
@@ -446,7 +450,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- call_in
 
 		call_out, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_call_out", "freeswitch gateway call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_call_out", "core_sbc gateway call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.CallsOut),
 		)
@@ -457,7 +461,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- call_out
 
 		failed_call_in, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_failed_call_in", "freeswitch gateway failed-call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_failed_call_in", "core_sbc gateway failed-call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.FailedCallsIn),
 		)
@@ -468,7 +472,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- failed_call_in
 
 		failed_call_out, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_failed_call_out", "freeswitch gateway failed-call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_failed_call_out", "core_sbc gateway failed-call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.FailedCallsOut),
 		)
@@ -479,7 +483,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- failed_call_out
 
 		ping, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_ping", "freeswitch gateway ping", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_ping", "core_sbc gateway ping", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.Ping),
 		)
@@ -490,7 +494,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- ping
 
 		pingfreq, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_pingfreq", "freeswitch gateway pingfreq", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_pingfreq", "core_sbc gateway pingfreq", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingFreq),
 		)
@@ -501,7 +505,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingfreq
 
 		pingmin, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_pingmin", "freeswitch gateway pingmin", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_pingmin", "core_sbc gateway pingmin", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingMin),
 		)
@@ -512,7 +516,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingmin
 
 		pingmax, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_pingmax", "freeswitch gateway pingmax", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_pingmax", "core_sbc gateway pingmax", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingMax),
 		)
@@ -523,7 +527,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingmax
 
 		pingcount, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_pingcount", "freeswitch gateway pingcount", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_pingcount", "core_sbc gateway pingcount", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingCount),
 		)
@@ -534,7 +538,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingcount
 
 		pingtime, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_sofia_gateway_pingtime", "freeswitch gateway pingtime", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_sofia_gateway_pingtime", "core_sbc gateway pingtime", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingTime),
 		)
@@ -548,7 +552,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) memoryMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api memory")
 	if err != nil {
@@ -596,7 +600,7 @@ func (c *Collector) memoryMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) endpointMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api show endpoint as xml")
 
@@ -613,7 +617,7 @@ func (c *Collector) endpointMetrics(ch chan<- prometheus.Metric) error {
 	level.Debug(logger).Log("[response]:", &rt)
 	for _, ep := range rt.Row {
 		ep_load, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_endpoint_status", "freeswitch endpoint status", nil, prometheus.Labels{"type": ep.Type.Text, "name": ep.Name.Text, "ikey": ep.Ikey.Text}),
+			prometheus.NewDesc(namespace+"_endpoint_status", "core_sbc endpoint status", nil, prometheus.Labels{"type": ep.Type.Text, "name": ep.Name.Text, "ikey": ep.Ikey.Text}),
 			prometheus.GaugeValue,
 			float64(1),
 		)
@@ -628,7 +632,7 @@ func (c *Collector) endpointMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) registrationsMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api show registrations as xml")
 
@@ -645,7 +649,7 @@ func (c *Collector) registrationsMetrics(ch chan<- prometheus.Metric) error {
 	level.Debug(logger).Log("[response]:", &rt)
 	for _, cc := range rt.Row {
 		cc_load, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_registration_defails", "freeswitch registration status", nil, prometheus.Labels{"reg_user": cc.RegUser.Text, "hostname": cc.Hostname.Text, "realm": cc.Realm.Text, "token": cc.Token.Text, "url": cc.Url.Text, "expires": cc.Expires.Text, "network_ip": cc.NetworkIp.Text, "network_port": cc.NetworkPort.Text, "network_proto": cc.NetworkProto.Text}),
+			prometheus.NewDesc(namespace+"_registration_defails", "core_sbc registration status", nil, prometheus.Labels{"reg_user": cc.RegUser.Text, "hostname": cc.Hostname.Text, "realm": cc.Realm.Text, "token": cc.Token.Text, "url": cc.Url.Text, "expires": cc.Expires.Text, "network_ip": cc.NetworkIp.Text, "network_port": cc.NetworkPort.Text, "network_proto": cc.NetworkProto.Text}),
 			prometheus.GaugeValue,
 			float64(1),
 		)
@@ -660,7 +664,7 @@ func (c *Collector) registrationsMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) codecMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api show codec as xml")
 
@@ -677,7 +681,7 @@ func (c *Collector) codecMetrics(ch chan<- prometheus.Metric) error {
 	level.Debug(logger).Log("[response]:", &rt)
 	for _, cc := range rt.Row {
 		cc_load, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_codec_status", "freeswitch endpoint status", nil, prometheus.Labels{"type": cc.Type.Text, "name": cc.Name.Text, "ikey": cc.Ikey.Text}),
+			prometheus.NewDesc(namespace+"_codec_status", "core_sbc endpoint status", nil, prometheus.Labels{"type": cc.Type.Text, "name": cc.Name.Text, "ikey": cc.Ikey.Text}),
 			prometheus.GaugeValue,
 			float64(1),
 		)
@@ -692,7 +696,7 @@ func (c *Collector) codecMetrics(ch chan<- prometheus.Metric) error {
 }
 
 func (c *Collector) vertoMetrics(ch chan<- prometheus.Metric) error {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
 	response, err := c.fsCommand("api verto xmlstatus")
 
@@ -713,7 +717,7 @@ func (c *Collector) vertoMetrics(ch chan<- prometheus.Metric) error {
 			vt_status = 1
 		}
 		vt_load, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_verto_status", "freeswitch endpoint status", nil, prometheus.Labels{"name": cc.Name.Text, "type": cc.Type.Text, "data": cc.Data.Text}),
+			prometheus.NewDesc(namespace+"_verto_status", "core_sbc endpoint status", nil, prometheus.Labels{"name": cc.Name.Text, "type": cc.Type.Text, "data": cc.Data.Text}),
 			prometheus.GaugeValue,
 			float64(vt_status),
 		)

@@ -2,16 +2,15 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"os"
-	"strings"
-
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/exporter-toolkit/web"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"net/http"
+	"os"
+	"strings"
 )
 
 func main() {
@@ -23,22 +22,26 @@ func main() {
 			"web.telemetry-path",
 			"Path under which to expose metrics.").Default("/metrics").String()
 		scrapeURI = kingpin.Flag(
-			"freeswitch.scrape-uri",
-			`URI on which to scrape freeswitch. E.g. "tcp://localhost:8021"`).Short('u').Default("tcp://localhost:8021").String()
+			"core_sbc.scrape-uri",
+			`URI on which to scrape core_sbc. E.g. "tcp://localhost:8021"`).Short('u').Default("tcp://localhost:8021").String()
 		timeout = kingpin.Flag(
-			"freeswitch.timeout",
-			"Timeout for trying to get stats from freeswitch.").Short('t').Default("5s").Duration()
+			"core_sbc.timeout",
+			"Timeout for trying to get stats from core_sbc.").Short('t').Default("5s").Duration()
 		password = kingpin.Flag(
-			"freeswitch.password",
-			"Password for freeswitch event socket.").Short('P').Default("ClueCon").String()
+			"core_sbc.password",
+			"Password for core_sbc event socket.").Short('P').Default("ClueCon").String()
 		configFile = kingpin.Flag(
 			"web.config",
 			"[EXPERIMENTAL] Path to config yaml file that can enable TLS or authentication.",
 		).Default("").String()
 		rtpEnable = kingpin.Flag("rtp.enable", "enable rtp info, default: false").Default("false").Bool()
 	)
-	promlogConfig := &promlog.Config{}
-	kingpin.Version("freeswitch_exporter")
+	jsonFormat := &promlog.AllowedFormat{}
+	jsonFormat.Set("json")
+	promlogConfig := &promlog.Config{Format: jsonFormat}
+	
+
+	kingpin.Version("core_sbc_exporter")
 	logger := promlog.New(promlogConfig)
 	kingpin.Parse()
 
@@ -82,9 +85,9 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
-			<head><title>FreeSWITCH Exporter</title></head>
+			<head><title>CourzadSBC Exporter</title></head>
 			<body>
-			<h1>FreeSWITCH Exporter</h1>
+			<h1>CourzadSBC Exporter</h1>
 			<p><a href="` + *metricsPath + `">Metrics</a></p>
 			</body>
 			</html>`))
