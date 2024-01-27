@@ -2,15 +2,23 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/promlog"
-	"github.com/prometheus/exporter-toolkit/web"
-	"gopkg.in/alecthomas/kingpin.v2"
+
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/prometheus/exporter-toolkit/web"
+	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+var (
+	cnfc_uuid = os.Getenv("CNFC_UUID")
+	cnf_uuid  = os.Getenv("CNF_UUID")
+	ns_uuid   = os.Getenv("NS_UUID")
 )
 
 func main() {
@@ -36,13 +44,18 @@ func main() {
 		).Default("").String()
 		rtpEnable = kingpin.Flag("rtp.enable", "enable rtp info, default: false").Default("false").Bool()
 	)
-	jsonFormat := &promlog.AllowedFormat{}
+	logLevel := &AllowedLevel{}
+	logLevel.Set("debug")
+
+	jsonFormat := &AllowedFormat{}
 	jsonFormat.Set("json")
-	promlogConfig := &promlog.Config{Format: jsonFormat}
-	
+
+	promlogConfig := &Config{Format: jsonFormat,
+		Level: logLevel}
 
 	kingpin.Version("core_sbc_exporter")
-	logger := promlog.New(promlogConfig)
+	logger := New(promlogConfig)
+
 	kingpin.Parse()
 
 	c, err := NewCollector(*scrapeURI, *timeout, *password, *rtpEnable)
@@ -93,7 +106,12 @@ func main() {
 			</html>`))
 	})
 
-	level.Info(logger).Log("msg", "Listening on", "address", *listenAddress)
+	// In the New and NewDynamic functions
+
+	// In the SetLevel method
+	// _ = l.base.Log("message", "Log level changed", "prev", l.currentLevel, "current", lvl)
+
+	level.Info(logger).Log("message", "Listening on", "address", *listenAddress)
 	server := &http.Server{Addr: *listenAddress}
 	if err := web.ListenAndServe(server, *configFile, logger); err != nil {
 		level.Info(logger).Log("err", err)

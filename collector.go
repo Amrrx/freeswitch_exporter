@@ -360,6 +360,7 @@ func (c *Collector) loadModuleMetrics(ch chan<- prometheus.Metric) error {
 
 	promlogConfig := &promlog.Config{Format: jsonFormat}
 	logger := promlog.New(promlogConfig)
+	
 	response, err := c.fsCommand("api xml_locate configuration configuration name modules.conf")
 
 	if err != nil {
@@ -571,7 +572,7 @@ func (c *Collector) memoryMetrics(ch chan<- prometheus.Metric) error {
 		matches := regexp.MustCompile(`(.+?) \((.+?)\):\s+(\d+)`).FindStringSubmatch(line)
 
 		if matches == nil {
-			level.Debug(logger).Log("msg", "Cannot parse memory line", "line", line)
+			level.Debug(logger).Log("message", "Cannot parse memory line", "line", line)
 			continue
 		}
 
