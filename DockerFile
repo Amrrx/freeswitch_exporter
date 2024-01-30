@@ -22,9 +22,7 @@ COPY --from=builder /go/src/app/freeswitch_exporter .
 
 # Expose the default port (9282)
 EXPOSE 9282
-ENV WORKERS=1 \
-    ENVS="1.env" \
-    CNFC_UUID="c6988a00-3cc1-4da7-961e-0ad5650b4a4a" \
+ENV CNFC_UUID="c6988a00-3cc1-4da7-961e-0ad5650b4a4a" \
     CNF_UUID="12951517-96ee-4a62-a765-a8eba6300207" \
     NS_UUID="f38481a2-2a73-47a8-8c8f-b9af1b9a7e9a"
 

@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -104,10 +103,10 @@ func New(config *Config) log.Logger {
 	}
 
 	if config.Level != nil {
-		l = log.With(l, "timestamp", timestampFormat, "caller", log.Caller(5), "cnfc_uuid", "", "cnf_uuid", "", "ns_uuid", "")
+		l = log.With(l, "timestamp", timestampFormat, "caller", log.Caller(5), "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
 		l = level.NewFilter(l, config.Level.o)
 	} else {
-		l = log.With(l, "timestamp", timestampFormat, "caller", log.DefaultCaller, "cnfc_uuid", "", "cnf_uuid", "", "ns_uuid", "")
+		l = log.With(l, "timestamp", timestampFormat, "caller", log.DefaultCaller, "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
 	}
 	return l
 }
@@ -154,13 +153,13 @@ func (l *logger) SetLevel(lvl *AllowedLevel) {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
 	if lvl == nil {
-		l.leveled = log.With(l.base, "timestamp", timestampFormat, "caller", log.DefaultCaller, "cnfc_uuid", "", "cnf_uuid", "", "ns_uuid", "")
+		l.leveled = log.With(l.base, "timestamp", timestampFormat, "caller", log.DefaultCaller, "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
 		l.currentLevel = nil
 		return
 	}
 
 	if l.currentLevel != nil && l.currentLevel.s != lvl.s {
-		_ = l.base.Log("message", "Log level changed", "prev", l.currentLevel, "current", lvl, "cnfc_uuid", "", "cnf_uuid", "", "ns_uuid", "")
+		_ = l.base.Log("message", "Log level changed", "prev", l.currentLevel, "current", lvl, "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
 	}
 	l.currentLevel = lvl
 	l.leveled = level.NewFilter(log.With(l.base, "timestamp", timestampFormat, "caller", log.Caller(5), "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid), lvl.o)
