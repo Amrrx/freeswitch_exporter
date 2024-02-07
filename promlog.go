@@ -94,7 +94,28 @@ type Config struct {
 
 // New returns a new leveled oklog logger. Each logged line will be annotated
 // with a timestamp. The output always goes to stderr.
+// func New(config *Config) log.Logger {
+// 	var l log.Logger
+// 	if config.Format != nil && config.Format.s == "json" {
+// 		l = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
+// 	} else {
+// 		l = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+// 	}
+
+// 	if config.Level != nil {
+// 		l = log.With(l, "timestamp", timestampFormat, "caller", log.Caller(5), "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
+// 		l = level.NewFilter(l, config.Level.o)
+// 	} else {
+// 		l = log.With(l, "timestamp", timestampFormat, "caller", log.DefaultCaller, "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
+// 	}
+// 	return l
+// }
 func New(config *Config) log.Logger {
+	if config == nil {
+		// Handle nil config. Could return a default logger or panic with a clear error message.
+		panic("config cannot be nil")
+	}
+
 	var l log.Logger
 	if config.Format != nil && config.Format.s == "json" {
 		l = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
@@ -102,12 +123,17 @@ func New(config *Config) log.Logger {
 		l = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	}
 
-	if config.Level != nil {
-		l = log.With(l, "timestamp", timestampFormat, "caller", log.Caller(5), "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
-		l = level.NewFilter(l, config.Level.o)
+	// Initialize the logger with additional context
+	baseLogger := log.With(l, "timestamp", timestampFormat, "caller", log.Caller(5), "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
+
+	if config.Level != nil && config.Level.o != nil {
+		// Use the provided level option only if it's not nil
+		l = level.NewFilter(baseLogger, config.Level.o)
 	} else {
-		l = log.With(l, "timestamp", timestampFormat, "caller", log.DefaultCaller, "cnfc_uuid", cnfc_uuid, "cnf_uuid", cnf_uuid, "ns_uuid", ns_uuid)
+		// Use default caller if level option is not provided
+		l = log.With(baseLogger, "caller", log.DefaultCaller)
 	}
+
 	return l
 }
 

@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-kit/log/level"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/go-kit/log/level"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/exporter-toolkit/web"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -19,6 +18,7 @@ var (
 	cnfc_uuid = os.Getenv("CNFC_UUID")
 	cnf_uuid  = os.Getenv("CNF_UUID")
 	ns_uuid   = os.Getenv("NS_UUID")
+	logit     = New(&Config{Format: &AllowedFormat{s: "json"}, Level: &AllowedLevel{s: "debug"}})
 )
 
 func main() {
@@ -44,17 +44,8 @@ func main() {
 		).Default("").String()
 		rtpEnable = kingpin.Flag("rtp.enable", "enable rtp info, default: false").Default("false").Bool()
 	)
-	logLevel := &AllowedLevel{}
-	logLevel.Set("debug")
-
-	jsonFormat := &AllowedFormat{}
-	jsonFormat.Set("json")
-
-	promlogConfig := &Config{Format: jsonFormat,
-		Level: logLevel}
 
 	kingpin.Version("core_sbc_exporter")
-	logger := New(promlogConfig)
 
 	kingpin.Parse()
 
@@ -65,7 +56,6 @@ func main() {
 	}
 
 	prometheus.MustRegister(c)
-
 	http.Handle(*metricsPath, promhttp.Handler())
 
 	// This implements Prometheus' multi-target exporter support
@@ -107,14 +97,10 @@ func main() {
 	})
 
 	// In the New and NewDynamic functions
-
-	// In the SetLevel method
-	// _ = l.base.Log("message", "Log level changed", "prev", l.currentLevel, "current", lvl)
-
-	level.Info(logger).Log("message", "Listening on", "address", *listenAddress)
+	logit.Log("message", fmt.Sprintf("Listening on address %s", *listenAddress))
 	server := &http.Server{Addr: *listenAddress}
-	if err := web.ListenAndServe(server, *configFile, logger); err != nil {
-		level.Info(logger).Log("err", err)
+	if err := web.ListenAndServe(server, *configFile, logit); err != nil {
+		level.Error(logit).Log("err", err, "alert_name", "exporter_not_listening")
 		os.Exit(1)
 	}
 }
