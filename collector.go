@@ -193,7 +193,7 @@ var (
 		{Name: "registrations", Type: prometheus.GaugeValue, Help: "Number of registrations active", Command: "api show registrations as json"},
 		{Name: "current_channels", Type: prometheus.GaugeValue, Help: "Number of channels active", Command: "api show channels count as json"},
 		{Name: "uptime_seconds", Type: prometheus.GaugeValue, Help: "Uptime in seconds", Command: "api uptime s"},
-		{Name: "time_synced", Type: prometheus.GaugeValue, Help: "Is FreeSWITCH time in sync with exporter host time", Command: "api strepoch"},
+		{Name: "time_synced", Type: prometheus.GaugeValue, Help: "Is CourzadSBC time in sync with exporter host time", Command: "api strepoch"},
 		{Name: "sessions_total", Type: prometheus.CounterValue, Help: "Number of sessions since startup", RegexIndex: 1},
 		{Name: "current_sessions", Type: prometheus.GaugeValue, Help: "Number of sessions active", RegexIndex: 2},
 		{Name: "current_sessions_peak", Type: prometheus.GaugeValue, Help: "Peak sessions since startup", RegexIndex: 3},
@@ -419,7 +419,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		}
 		logit.Log("sofia ", gateway.Name, " status:", status, "message", "")
 		fs_status, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_status", "core_sbc gateways status", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile, "context": gateway.Context, "scheme": gateway.Scheme}),
+			prometheus.NewDesc(namespace+"_gateway_status", "core_sbc gateways status", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile, "context": gateway.Context, "scheme": gateway.Scheme}),
 			prometheus.GaugeValue,
 			float64(status),
 		)
@@ -431,7 +431,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- fs_status
 
 		call_in, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_call_in", "core_sbc gateway call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_call_in", "core_sbc gateway call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.CallsIn),
 		)
@@ -442,7 +442,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- call_in
 
 		call_out, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_call_out", "core_sbc gateway call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_call_out", "core_sbc gateway call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.CallsOut),
 		)
@@ -453,7 +453,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- call_out
 
 		failed_call_in, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_failed_call_in", "core_sbc gateway failed-call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_failed_call_in", "core_sbc gateway failed-call-in", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.FailedCallsIn),
 		)
@@ -464,7 +464,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- failed_call_in
 
 		failed_call_out, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_failed_call_out", "core_sbc gateway failed-call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_failed_call_out", "core_sbc gateway failed-call-out", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.FailedCallsOut),
 		)
@@ -475,7 +475,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- failed_call_out
 
 		ping, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_ping", "core_sbc gateway ping", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_ping", "core_sbc gateway ping", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.Ping),
 		)
@@ -486,7 +486,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- ping
 
 		pingfreq, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_pingfreq", "core_sbc gateway pingfreq", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_pingfreq", "core_sbc gateway pingfreq", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingFreq),
 		)
@@ -497,7 +497,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingfreq
 
 		pingmin, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_pingmin", "core_sbc gateway pingmin", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_pingmin", "core_sbc gateway pingmin", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingMin),
 		)
@@ -508,7 +508,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingmin
 
 		pingmax, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_pingmax", "core_sbc gateway pingmax", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_pingmax", "core_sbc gateway pingmax", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingMax),
 		)
@@ -519,7 +519,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingmax
 
 		pingcount, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_pingcount", "core_sbc gateway pingcount", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_pingcount", "core_sbc gateway pingcount", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingCount),
 		)
@@ -530,7 +530,7 @@ func (c *Collector) sofiaStatusMetrics(ch chan<- prometheus.Metric) error {
 		ch <- pingcount
 
 		pingtime, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(namespace+"_"+gateway.Name+"_gateway_pingtime", "core_sbc gateway pingtime", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
+			prometheus.NewDesc(namespace+"_gateway_pingtime", "core_sbc gateway pingtime", nil, prometheus.Labels{"name": gateway.Name, "proxy": gateway.Proxy, "profile": gateway.Profile}),
 			prometheus.GaugeValue,
 			float64(gateway.PingTime),
 		)
